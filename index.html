@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>ParfumBiz</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg:#fff;--bg-soft:#f8fafc;--bg-softer:#f1f5f9;
+    --bd:#e5e7eb;--bd-soft:#f1f5f9;
+    --tx:#0a0a0a;--tx-mid:#374151;--tx-mut:#6b7280;--tx-sf:#9ca3af;
+    --ac:#10b981;--ac-soft:#ecfdf5;--ac-bd:#a7f3d0;
+    --am:#f59e0b;--am-soft:#fffbeb;--am-bd:#fde68a;--am-tx:#92400e;
+    --rd:#ef4444;--rd-soft:#fef2f2;
+    --bl:#3b82f6;--bl-soft:#eff6ff;
+    --safe-top:env(safe-area-inset-top,0px);
+    --safe-bot:env(safe-area-inset-bottom,0px);
+    --nav-h:calc(62px + var(--safe-bot));
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;overscroll-behavior-y:none;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',system-ui,sans-serif;background:var(--bg-soft);color:var(--tx);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  .app{max-width:640px;margin:0 auto;min-height:100vh;background:var(--bg);position:relative;padding-bottom:var(--nav-h);}
+  .header{position:sticky;top:0;z-index:100;background:rgba(255,255,255,0.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--bd-soft);padding:calc(10px + var(--safe-top)) 16px 10px;display:flex;justify-content:space-between;align-items:center;gap:12px;}
+  .header h1{font-size:18px;font-weight:700;letter-spacing:-0.3px;}
+  .header .sub{font-size:11.5px;color:var(--tx-mut);margin-top:2px;}
+  .header-btn{background:var(--bg-softer);border:none;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;flex-shrink:0;}
+  .header-btn:active{transform:scale(0.95);}
+  main{padding:12px 0 20px;min-height:calc(100vh - 200px);}
+  .pad{padding:0 16px;}
+  /* Bottom Nav */
+  .nav{position:fixed;bottom:0;left:0;right:0;max-width:640px;margin:0 auto;background:rgba(255,255,255,0.97);backdrop-filter:blur(20px);border-top:1px solid var(--bd-soft);display:flex;justify-content:space-around;height:var(--nav-h);padding-bottom:var(--safe-bot);z-index:200;}
+  .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:none;border:none;font-family:inherit;color:var(--tx-sf);cursor:pointer;padding:4px 0;position:relative;transition:color .15s;}
+  .nav-btn:active{transform:scale(0.95);}
+  .nav-btn.active{color:var(--ac);}
+  .nav-icon{font-size:18px;line-height:1;}
+  .nav-label{font-size:9.5px;font-weight:600;letter-spacing:0.2px;}
+  /* Cards & Buttons */
+  .card{background:var(--bg);border:1px solid var(--bd-soft);border-radius:12px;padding:14px;margin:0 12px 8px;}
+  .card-flat{background:var(--bg-soft);border-radius:10px;padding:12px;}
+  .btn{padding:10px 16px;border-radius:10px;border:none;background:var(--tx);color:#fff;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;}
+  .btn:active{transform:scale(0.97);}
+  .btn.secondary{background:var(--bg-softer);color:var(--tx);}
+  .btn.accent{background:var(--ac);}
+  .btn.danger{background:var(--rd-soft);color:var(--rd);}
+  .btn.sm{padding:7px 12px;font-size:12.5px;border-radius:8px;}
+  .btn.block{width:100%;}
+  /* Form */
+  .field{margin-bottom:12px;}
+  .field label{display:block;font-size:12px;font-weight:600;color:var(--tx-mid);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.3px;}
+  .field input,.field select,.field textarea{width:100%;padding:11px 12px;font-size:16px;border:1px solid var(--bd);border-radius:10px;font-family:inherit;background:var(--bg);color:var(--tx);}
+  .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--ac);}
+  .field textarea{min-height:60px;resize:vertical;}
+  /* Section title */
+  .sec{padding:20px 20px 8px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--tx-mut);}
+  /* Stats grid */
+  .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px;}
+  .stat-card{background:var(--bg-soft);border-radius:12px;padding:14px;}
+  .stat-num{font-size:24px;font-weight:700;letter-spacing:-0.5px;line-height:1.1;margin-bottom:4px;}
+  .stat-num.green{color:var(--ac);}
+  .stat-num.red{color:var(--rd);}
+  .stat-num.blue{color:var(--bl);}
+  .stat-num.amber{color:var(--am);}
+  .stat-label{font-size:11.5px;color:var(--tx-mut);font-weight:500;}
+  /* Module list */
+  .module-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:8px 16px 16px;}
+  .module-card{background:var(--bg);border:1px solid var(--bd-soft);border-radius:12px;padding:16px;text-align:left;font-family:inherit;cursor:pointer;transition:all .15s;}
+  .module-card:active{transform:scale(0.98);background:var(--bg-soft);}
+  .module-icon{font-size:26px;margin-bottom:8px;}
+  .module-name{font-size:13.5px;font-weight:600;color:var(--tx);margin-bottom:2px;}
+  .module-desc{font-size:11.5px;color:var(--tx-mut);}
+  /* Table */
+  .list-item{background:var(--bg);border:1px solid var(--bd-soft);border-radius:12px;padding:12px 14px;margin:0 12px 8px;display:flex;align-items:center;gap:12px;}
+  .list-item-main{flex:1;min-width:0;}
+  .list-item-title{font-size:14px;font-weight:600;color:var(--tx);margin-bottom:2px;}
+  .list-item-sub{font-size:12px;color:var(--tx-mut);}
+  .list-item-right{text-align:right;font-size:13px;font-weight:600;flex-shrink:0;}
+  .badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.3px;}
+  .badge.green{background:var(--ac-soft);color:#065f46;}
+  .badge.amber{background:var(--am-soft);color:var(--am-tx);}
+  .badge.red{background:var(--rd-soft);color:#991b1b;}
+  .badge.blue{background:var(--bl-soft);color:#1d4ed8;}
+  /* Tabs (sub nav) */
+  .sub-tabs{display:flex;gap:6px;padding:8px 16px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--bd-soft);}
+  .sub-tabs::-webkit-scrollbar{display:none;}
+  .sub-tab{flex-shrink:0;padding:7px 14px;border-radius:100px;background:var(--bg-softer);border:none;color:var(--tx-mid);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;}
+  .sub-tab.active{background:var(--tx);color:#fff;font-weight:600;}
+  /* Modal */
+  .modal-bd{position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:400;opacity:0;pointer-events:none;transition:opacity .2s;}
+  .modal-bd.show{opacity:1;pointer-events:auto;}
+  .modal{position:fixed;bottom:0;left:0;right:0;max-width:640px;margin:0 auto;background:var(--bg);border-radius:20px 20px 0 0;padding:8px 16px calc(20px + var(--safe-bot));z-index:401;transform:translateY(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);max-height:88vh;overflow-y:auto;}
+  .modal.show{transform:translateY(0);}
+  .modal-handle{width:36px;height:4px;background:var(--bd);border-radius:2px;margin:0 auto 12px;}
+  .modal-title{font-size:17px;font-weight:700;margin-bottom:16px;}
+  /* Toast */
+  .toast{position:fixed;top:calc(72px + var(--safe-top));left:50%;transform:translateX(-50%) translateY(-16px);background:var(--tx);color:#fff;padding:10px 18px;border-radius:100px;font-size:13px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,0.18);opacity:0;transition:all .25s;pointer-events:none;z-index:300;max-width:calc(100vw - 40px);text-align:center;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .toast.success{background:var(--ac);}
+  .toast.error{background:var(--rd);}
+  /* Empty */
+  .empty{text-align:center;padding:48px 24px;color:var(--tx-mut);font-size:14px;}
+  .empty-icon{width:56px;height:56px;border-radius:50%;background:var(--bg-softer);display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 12px;}
+  /* Loading */
+  .loading{text-align:center;padding:40px 20px;color:var(--tx-mut);font-size:13px;}
+  /* Task */
+  .task{background:var(--bg);border:1px solid var(--bd-soft);border-radius:12px;margin:0 12px 8px;overflow:hidden;transition:all .2s;}
+  .task.expanded{border-color:var(--bd);box-shadow:0 4px 12px rgba(0,0,0,0.05);}
+  .task-main{display:flex;align-items:flex-start;gap:12px;padding:13px 14px;cursor:pointer;min-height:54px;}
+  .cb{width:22px;height:22px;flex-shrink:0;margin-top:2px;position:relative;}
+  .cb input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer;width:100%;height:100%;z-index:2;}
+  .cb-box{width:22px;height:22px;border:2px solid var(--bd);border-radius:6px;display:flex;align-items:center;justify-content:center;transition:all .15s;background:var(--bg);}
+  .cb-box::after{content:'';width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px);opacity:0;transition:.15s;}
+  .cb input:checked + .cb-box{background:var(--ac);border-color:var(--ac);}
+  .cb input:checked + .cb-box::after{opacity:1;}
+  .task.done .task-title{text-decoration:line-through;color:var(--tx-sf);}
+  .task.done .task-main{opacity:0.6;}
+  .task-title{font-size:14.5px;font-weight:600;color:var(--tx);line-height:1.4;margin-bottom:3px;}
+  .task-meta{font-size:11.5px;color:var(--tx-mut);}
+  .task-body{display:grid;grid-template-rows:0fr;transition:grid-template-rows .28s;}
+  .task.expanded .task-body{grid-template-rows:1fr;}
+  .task-body-inner{overflow:hidden;min-height:0;}
+  .task-body-content{padding:14px;border-top:1px solid var(--bd-soft);font-size:13.5px;color:var(--tx-mid);}
+  .task-body-content ol{margin-left:18px;margin-bottom:12px;}
+  .task-body-content li{margin-bottom:6px;}
+  .task-body-content .sec-l{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--tx-mut);margin-bottom:4px;margin-top:12px;}
+  .task-body-content .box{background:var(--bg-soft);border-radius:8px;padding:9px 11px;font-size:13px;}
+  .task-body-content .box.success{background:var(--ac-soft);color:#065f46;}
+  .task-body-content .box.target{background:var(--am-soft);color:var(--am-tx);font-weight:600;}
+  .task-body-content textarea{width:100%;padding:10px;font-size:16px;border:1px solid var(--bd);border-radius:8px;font-family:inherit;min-height:50px;margin-top:6px;resize:vertical;}
+  /* Filter chips */
+  .chips-row{display:flex;gap:6px;padding:10px 16px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--bd-soft);}
+  .chips-row::-webkit-scrollbar{display:none;}
+  .chip{flex-shrink:0;padding:6px 13px;border-radius:100px;background:var(--bg-softer);border:none;color:var(--tx-mid);font-size:12.5px;font-weight:500;cursor:pointer;font-family:inherit;}
+  .chip.active{background:var(--tx);color:#fff;font-weight:600;}
+  /* Calc result */
+  .calc-result{background:var(--ac-soft);border:1px solid var(--ac-bd);border-radius:12px;padding:16px;margin-top:12px;}
+  .calc-result .row{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:var(--tx-mid);}
+  .calc-result .row.total{border-top:1px solid var(--ac-bd);margin-top:8px;padding-top:10px;font-size:16px;font-weight:700;color:#065f46;}
+  .calc-result .row .v{font-weight:600;color:var(--tx);}
+  .calc-result .row.total .v{color:#065f46;font-size:18px;}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div>
+      <h1 id="pageTitle">ParfumBiz</h1>
+      <div class="sub" id="pageSub">Dashboard</div>
+    </div>
+    <button class="header-btn" id="menuBtn">⋯</button>
+  </header>
+
+  <main id="main">
+    <div class="loading">Memuat…</div>
+  </main>
+
+  <nav class="nav" id="nav">
+    <button class="nav-btn active" data-tab="home"><span class="nav-icon">🏠</span><span class="nav-label">Home</span></button>
+    <button class="nav-btn" data-tab="tasks"><span class="nav-icon">📋</span><span class="nav-label">Tasks</span></button>
+    <button class="nav-btn" data-tab="stock"><span class="nav-icon">📦</span><span class="nav-label">Stok</span></button>
+    <button class="nav-btn" data-tab="biz"><span class="nav-icon">💼</span><span class="nav-label">Bisnis</span></button>
+    <button class="nav-btn" data-tab="cust"><span class="nav-icon">👥</span><span class="nav-label">Cust</span></button>
+    <button class="nav-btn" data-tab="tools"><span class="nav-icon">💰</span><span class="nav-label">Tools</span></button>
+  </nav>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="modal-bd" id="modalBd"></div>
+<div class="modal" id="modal"><div class="modal-handle"></div><div id="modalContent"></div></div>
+
+<script>
+// ==========================================
+const SUPABASE_URL = 'https://jpinyoramequkxiqrtit.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwaW55b3JhbWVxdWt4aXFydGl0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUyMzUwNTksImV4cCI6MjExMDgxMTA1OX0.46i7ijuXHu1cVguuPwC3grZ8cJuul6do2OSHZUhxHtk';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const AREA_INFO = {
+  produk:{i:'🎨',l:'Produk & Brand'}, konten:{i:'📸',l:'Konten & Kreatif'},
+  sales:{i:'🛒',l:'Channel Penjualan'}, marketing:{i:'📣',l:'Marketing & Growth'},
+  customer:{i:'💝',l:'Customer & Retention'}, data:{i:'📊',l:'Data & KPI'}
+};
+const AREA_ORDER = ['produk','konten','sales','marketing','customer','data'];
+const TL_LABEL = {m6:'Setup',m1:'Bulan 1',m2:'Bulan 2',m3:'Bulan 3',m4:'Rutin',m5:'KPI'};
+
+// State
+let data = {
+  tasks:[], products:[], stock:[],
+  resellers:[], resellerSales:[],
+  stores:[], consignments:[],
+  customers:[], ads:[]
+};
+let activeTab = 'home';
+let activeSub = {};
+const openSet = new Set();
+const saveTimers = {};
+
+// Utils
+const $ = (s,c)=>(c||document).querySelector(s);
+const $$ = (s,c)=>Array.from((c||document).querySelectorAll(s));
+const esc = s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtRp = n=>'Rp'+Math.round(n).toLocaleString('id-ID');
+const hap = (ms=15)=>{if(navigator.vibrate)navigator.vibrate(ms);};
+
+function toast(msg,type=''){
+  const e=$('#toast');e.textContent=msg;e.className='toast show '+type;
+  clearTimeout(toast._t);toast._t=setTimeout(()=>e.classList.remove('show'),2400);
+}
+
+function openModal(title,html){
+  $('#modalContent').innerHTML=`<div class="modal-title">${esc(title)}</div>${html}`;
+  $('#modalBd').classList.add('show');
+  $('#modal').classList.add('show');
+}
+function closeModal(){
+  $('#modalBd').classList.remove('show');
+  $('#modal').classList.remove('show');
+}
+$('#modalBd').onclick = closeModal;
+
+// ==========================================
+// LOAD
+// ==========================================
+async function loadAll(){
+  try {
+    const [tasks, products, stock, resellers, rsales, stores, cons, cust, ads] = await Promise.all([
+      sb.from('tasks').select('*').order('sort_order'),
+      sb.from('products').select('*').order('sku'),
+      sb.from('current_stock').select('*').order('sku'),
+      sb.from('resellers').select('*').order('name'),
+      sb.from('reseller_sales').select('*').order('created_at',{ascending:false}).limit(100),
+      sb.from('partner_stores').select('*').order('name'),
+      sb.from('consignment_stocks').select('*').order('created_at',{ascending:false}).limit(100),
+      sb.from('customers').select('*').order('created_at',{ascending:false}).limit(200),
+      sb.from('ads_tasks').select('*').order('sort_order')
+    ]);
+    if (tasks.error) throw tasks.error;
+    data.tasks = tasks.data||[];
+    data.products = products.data||[];
+    data.stock = stock.data||[];
+    data.resellers = resellers.data||[];
+    data.resellerSales = rsales.data||[];
+    data.stores = stores.data||[];
+    data.consignments = cons.data||[];
+    data.customers = cust.data||[];
+    data.ads = ads.data||[];
+    render();
+  } catch(err){
+    $('#main').innerHTML=`<div class="empty"><div class="empty-icon">⚠️</div><div style="font-weight:600;color:var(--rd)">Gagal memuat</div><div style="font-size:12px;margin-top:8px">${esc(err.message||'Unknown')}</div><button class="btn secondary sm" style="margin-top:16px" onclick="loadAll()">Coba lagi</button></div>`;
+  }
+}
+
+// ==========================================
+// ROUTER
+// ==========================================
+function render(){
+  $('#nav').querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===activeTab));
+  switch(activeTab){
+    case 'home': renderHome(); break;
+    case 'tasks': renderTasks(); break;
+    case 'stock': renderStock(); break;
+    case 'biz': renderBiz(); break;
+    case 'cust': renderCust(); break;
+    case 'tools': renderTools(); break;
+  }
+}
+
+function setSub(tab,sub){ activeSub[tab]=sub; render(); }
+
+$('#nav').addEventListener('click',e=>{
+  const b=e.target.closest('.nav-btn'); if(!b) return;
+  activeTab=b.dataset.tab; hap(); window.scrollTo({top:0,behavior:'smooth'}); render();
+});
+
+$('#menuBtn').addEventListener('click',()=>{
+  openModal('Menu',`
+    <button class="btn secondary block" style="margin-bottom:8px" onclick="exportAll()">📥 Export semua data (JSON)</button>
+    <button class="btn danger block" onclick="confirmReset()">🔄 Reset semua progress</button>
+  `);
+});
+
+// ==========================================
+// HOME
+// ==========================================
+function renderHome(){
+  $('#pageTitle').textContent='ParfumBiz';
+  $('#pageSub').textContent='Dashboard';
+
+  const tasksDone = data.tasks.filter(t=>t.done).length;
+  const tasksTotal = data.tasks.length;
+  const stokRendah = data.stock.filter(s=>s.quantity_on_hand < 10).length;
+  const totalCustomers = data.customers.length;
+  const revenueBulan = data.resellerSales.reduce((s,r)=>s+(r.quantity*r.unit_price),0);
+
+  $('#main').innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-num green">${tasksDone}/${tasksTotal}</div><div class="stat-label">Task selesai</div></div>
+      <div class="stat-card"><div class="stat-num ${stokRendah>0?'red':'green'}">${stokRendah}</div><div class="stat-label">SKU stok rendah</div></div>
+      <div class="stat-card"><div class="stat-num blue">${totalCustomers}</div><div class="stat-label">Customer terdaftar</div></div>
+      <div class="stat-card"><div class="stat-num amber">${fmtRp(revenueBulan)}</div><div class="stat-label">Penjualan reseller</div></div>
+    </div>
+    <div class="sec">Modul Aplikasi</div>
+    <div class="module-grid">
+      <button class="module-card" onclick="activeTab='tasks';render()"><div class="module-icon">📋</div><div class="module-name">Task Board</div><div class="module-desc">${tasksDone}/${tasksTotal} selesai</div></button>
+      <button class="module-card" onclick="activeTab='stock';render()"><div class="module-icon">📦</div><div class="module-name">Stok</div><div class="module-desc">${data.stock.length} SKU</div></button>
+      <button class="module-card" onclick="activeTab='biz';render()"><div class="module-icon">💼</div><div class="module-name">Bisnis</div><div class="module-desc">Reseller & Titip</div></button>
+      <button class="module-card" onclick="activeTab='cust';render()"><div class="module-icon">👥</div><div class="module-name">Customer</div><div class="module-desc">${totalCustomers} orang</div></button>
+      <button class="module-card" onclick="activeTab='tools';activeSub.tools='calc';render()"><div class="module-icon">💰</div><div class="module-name">Kalkulator</div><div class="module-desc">Harga jual</div></button>
+      <button class="module-card" onclick="activeTab='tools';activeSub.tools='ads';render()"><div class="module-icon">📣</div><div class="module-name">Ads</div><div class="module-desc">${data.ads.filter(t=>t.done).length}/${data.ads.length} selesai</div></button>
+    </div>
+  `;
+}
+
+// ==========================================
+// TASKS
+// ==========================================
+function renderTasks(){
+  $('#pageTitle').textContent='Task Board';
+  $('#pageSub').textContent='Marketing parfum';
+  const filter = activeSub.tasks || 'all';
+  const tl = activeSub.tasksTL || 'all';
+
+  let filtered = data.tasks;
+  if (filter!=='all') filtered=filtered.filter(t=>t.area===filter);
+  if (tl!=='all') filtered=filtered.filter(t=>t.category===tl);
+
+  const groups={};
+  filtered.forEach(t=>{(groups[t.meta]=groups[t.meta]||[]).push(t);});
+
+  let html=`
+    <div class="chips-row">
+      <button class="chip ${filter==='all'?'active':''}" onclick="setSub('tasks','all')">Semua</button>
+      ${AREA_ORDER.map(a=>`<button class="chip ${filter===a?'active':''}" onclick="setSub('tasks','${a}')">${AREA_INFO[a].i} ${AREA_INFO[a].l.split(' ')[0]}</button>`).join('')}
+    </div>
+    <div class="chips-row">
+      <button class="chip ${tl==='all'?'active':''}" onclick="setSub('tasksTL','all')">Semua waktu</button>
+      ${Object.entries(TL_LABEL).map(([k,v])=>`<button class="chip ${tl===k?'active':''}" onclick="setSub('tasksTL','${k}')">${v}</button>`).join('')}
+    </div>
+  `;
+
+  if (Object.keys(groups).length===0){
+    html+='<div class="empty"><div class="empty-icon">🔍</div>Tidak ada task di filter ini</div>';
+  } else {
+    Object.entries(groups).forEach(([meta,items])=>{
+      const d=items.filter(t=>t.done).length;
+      html+=`<div class="sec">${esc(meta)} · ${d}/${items.length}</div>`;
+      items.forEach(t=>{html+=renderTaskCard(t);});
+    });
+  }
+  $('#main').innerHTML=html;
+  bindTaskEvents();
+}
+
+function renderTaskCard(t){
+  const open=openSet.has(t.id);
+  const steps=Array.isArray(t.steps)?t.steps:[];
+  return `
+    <div class="task ${t.done?'done':''} ${open?'expanded':''}" data-tid="${t.id}">
+      <div class="task-main" data-action="open">
+        <label class="cb" onclick="event.stopPropagation()">
+          <input type="checkbox" ${t.done?'checked':''} data-action="done">
+          <span class="cb-box"></span>
+        </label>
+        <div style="flex:1;min-width:0">
+          <div class="task-title">${esc(t.title)}</div>
+          <div class="task-meta">${esc(t.meta)}</div>
+        </div>
+      </div>
+      <div class="task-body"><div class="task-body-inner"><div class="task-body-content">
+        <div class="sec-l">Langkah</div>
+        <ol>${steps.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>
+        <div class="sec-l">Output</div>
+        <div class="box">${esc(t.output)}</div>
+        <div class="sec-l">Ukuran berhasil</div>
+        <div class="box success">${esc(t.success_metric)}</div>
+        <div class="sec-l">Target angka</div>
+        <div class="box target">${esc(t.target_metric)}</div>
+        <div class="sec-l">Catatan kamu</div>
+        <textarea data-action="notes" placeholder="Tulis progres…">${esc(t.notes||'')}</textarea>
+      </div></div></div>
+    </div>
+  `;
+}
+
+function bindTaskEvents(){
+  $$('.task').forEach(card=>{
+    const id=card.dataset.tid;
+    const task=data.tasks.find(t=>t.id===id);
+    if(!task)return;
+    card.querySelector('[data-action="open"]').addEventListener('click',e=>{
+      if(e.target.closest('.cb'))return;
+      if(openSet.has(id))openSet.delete(id); else openSet.add(id);
+      card.classList.toggle('expanded');
+    });
+    const cb=card.querySelector('[data-action="done"]');
+    cb.addEventListener('change',async e=>{
+      e.stopPropagation();
+      const val=cb.checked;
+      const prev=task.done;task.done=val;
+      card.classList.toggle('done',val);
+      try{
+        const {error}=await sb.from('tasks').update({done:val}).eq('id',id);
+        if(error)throw error;
+        if(val)hap(20);
+      }catch(err){task.done=prev;cb.checked=prev;card.classList.toggle('done',prev);toast('Gagal simpan','error');}
+    });
+    const notes=card.querySelector('[data-action="notes"]');
+    notes.addEventListener('input',e=>{
+      task.notes=e.target.value;
+      clearTimeout(saveTimers[id]);
+      saveTimers[id]=setTimeout(async()=>{
+        try{await sb.from('tasks').update({notes:e.target.value}).eq('id',id);}catch(err){toast('Gagal simpan catatan','error');}
+      },800);
+    });
+  });
+}
+
+// ==========================================
+// STOCK
+// ==========================================
+function renderStock(){
+  $('#pageTitle').textContent='Stok';
+  const totalNilai=data.stock.reduce((s,x)=>{const p=data.products.find(p=>p.id===x.id);return s+(x.quantity_on_hand*(p?.hpp||0));},0);
+  const rendah=data.stock.filter(s=>s.quantity_on_hand<10);
+
+  let html=`
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-num">${data.stock.length}</div><div class="stat-label">SKU aktif</div></div>
+      <div class="stat-card"><div class="stat-num ${rendah.length>0?'red':'green'}">${rendah.length}</div><div class="stat-label">Stok < 10 pcs</div></div>
+      <div class="stat-card" style="grid-column:1/-1"><div class="stat-num blue">${fmtRp(totalNilai)}</div><div class="stat-label">Nilai persediaan (HPP)</div></div>
+    </div>
+    <div class="pad" style="display:flex;gap:8px;padding-top:8px;padding-bottom:4px">
+      <button class="btn accent sm" onclick="modalAddMovement('in')">+ Stok Masuk</button>
+      <button class="btn secondary sm" onclick="modalAddMovement('out')">− Stok Keluar</button>
+      <button class="btn secondary sm" onclick="modalAddMovement('adjustment')">⚖ Opname</button>
+    </div>
+    <div class="sec">Daftar SKU</div>
+  `;
+
+  if (data.stock.length===0){
+    html+='<div class="empty">Belum ada produk. Tambahkan via SQL seed atau form di atas.</div>';
+  } else {
+    data.stock.forEach(s=>{
+      const p=data.products.find(x=>x.id===s.id);
+      const qty=s.quantity_on_hand;
+      const status=qty<5?'red':qty<10?'amber':'green';
+      html+=`
+        <div class="list-item">
+          <div class="list-item-main">
+            <div class="list-item-title">${esc(s.name)}</div>
+            <div class="list-item-sub">${esc(s.sku)} · HPP ${p?fmtRp(p.hpp):'-'} · Jual ${p?fmtRp(p.price):'-'}</div>
+          </div>
+          <div class="list-item-right">
+            <div class="stat-num" style="font-size:18px;color:var(--${status==='green'?'ac':status==='amber'?'am':'rd'})">${qty}</div>
+            <div class="list-item-sub">pcs</div>
+          </div>
+        </div>
+      `;
+    });
+  }
+  $('#main').innerHTML=html;
+}
+
+function modalAddMovement(type){
+  const label=type==='in'?'Stok Masuk':type==='out'?'Stok Keluar':'Opname';
+  const sign=type==='out'?'−':'+';
+  openModal(label,`
+    <div class="field"><label>Produk</label>
+      <select id="mProduct">
+        ${data.products.map(p=>`<option value="${p.id}">${esc(p.name)} (${esc(p.sku)})</option>`).join('')}
+      </select>
+    </div>
+    <div class="field"><label>Jumlah (${sign} pcs)</label><input type="number" id="mQty" min="1" value="1"></div>
+    ${type==='in'?'<div class="field"><label>Harga satuan (HPP)</label><input type="number" id="mCost" placeholder="12000"></div>':''}
+    <div class="field"><label>Catatan</label><input type="text" id="mNote" placeholder="opsional"></div>
+    <button class="btn accent block" onclick="submitMovement('${type}')">Simpan</button>
+  `);
+}
+
+async function submitMovement(type){
+  const product_id=$('#mProduct').value;
+  const qty=parseInt($('#mQty').value)||0;
+  const cost=$('#mCost')?parseFloat($('#mCost').value)||null:null;
+  const note=$('#mNote').value;
+  if(!product_id||qty<=0) return toast('Isi jumlah','error');
+  const quantity = type==='out' ? -qty : qty;
+  try{
+    const {error}=await sb.from('stock_movements').insert({
+      product_id, movement_type:type, quantity, unit_cost:cost, note, reference_type:'manual'
+    });
+    if(error)throw error;
+    closeModal();toast('Stok tersimpan','success');
+    await loadAll(); render();
+  }catch(err){toast('Gagal: '+err.message,'error');}
+}
+
+// ==========================================
+// BISNIS (Reseller + Titip Toko)
+// ==========================================
+function renderBiz(){
+  $('#pageTitle').textContent='Bisnis';
+  const sub=activeSub.biz||'reseller';
+  let html=`
+    <div class="sub-tabs">
+      <button class="sub-tab ${sub==='reseller'?'active':''}" onclick="setSub('biz','reseller')">🤝 Reseller</button>
+      <button class="sub-tab ${sub==='titip'?'active':''}" onclick="setSub('biz','titip')">🏪 Titip Toko</button>
+    </div>
+  `;
+  if(sub==='reseller') html+=renderReseller();
+  else html+=renderTitip();
+  $('#main').innerHTML=html;
+}
+
+function renderReseller(){
+  const total=data.resellers.length;
+  const revenue=data.resellerSales.reduce((s,r)=>s+r.quantity*r.unit_price,0);
+  let html=`
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-num">${total}</div><div class="stat-label">Reseller aktif</div></div>
+      <div class="stat-card"><div class="stat-num green">${fmtRp(revenue)}</div><div class="stat-label">Total penjualan</div></div>
+    </div>
+    <div class="pad" style="padding-top:8px"><button class="btn accent sm" onclick="modalAddReseller()">+ Tambah Reseller</button></div>
+    <div class="sec">Daftar Reseller</div>
+  `;
+  if(data.resellers.length===0){
+    html+='<div class="empty">Belum ada reseller. Klik tombol di atas.</div>';
+  } else {
+    data.resellers.forEach(r=>{
+      const sales=data.resellerSales.filter(s=>s.reseller_id===r.id);
+      const total= sales.reduce((s,x)=>s+x.quantity*x.unit_price,0);
+      html+=`
+        <div class="list-item">
+          <div class="list-item-main">
+            <div class="list-item-title">${esc(r.name)}</div>
+            <div class="list-item-sub">${esc(r.city||'-')} · ${esc(r.phone||'-')} · Diskon ${r.discount_pct}%</div>
+          </div>
+          <div class="list-item-right">
+            <div style="font-size:13px;color:var(--ac);font-weight:600">${fmtRp(total)}</div>
+            <button class="btn secondary sm" style="margin-top:4px;font-size:11px" onclick="modalAddResellerSale('${r.id}')">+ Jual</button>
+          </div>
+        </div>
+      `;
+    });
+  }
+  return html;
+}
+
+function modalAddReseller(){
+  openModal('Tambah Reseller',`
+    <div class="field"><label>Nama</label><input id="rName" placeholder="Nama reseller"></div>
+    <div class="field"><label>No. HP</label><input id="rPhone" placeholder="08xxx"></div>
+    <div class="field"><label>Kota</label><input id="rCity" placeholder="Jakarta"></div>
+    <div class="field"><label>Diskon (%)</label><input type="number" id="rDisc" value="25"></div>
+    <button class="btn accent block" onclick="submitReseller()">Simpan</button>
+  `);
+}
+
+async function submitReseller(){
+  const name=$('#rName').value.trim();
+  if(!name) return toast('Nama wajib','error');
+  try{
+    const {error}=await sb.from('resellers').insert({
+      name, phone:$('#rPhone').value, city:$('#rCity').value,
+      discount_pct:parseFloat($('#rDisc').value)||25
+    });
+    if(error)throw error;
+    closeModal();toast('Reseller ditambah','success');
+    await loadAll();render();
+  }catch(err){toast('Gagal','error');}
+}
+
+function modalAddResellerSale(rid){
+  const r=data.resellers.find(x=>x.id===rid);
+  const products=data.products.map(p=>{
+    const harga=p.price*(1-r.discount_pct/100);
+    return `<option value="${p.id}" data-price="${Math.round(harga)}">${esc(p.name)} — ${fmtRp(harga)}</option>`;
+  }).join('');
+  openModal('Catat Penjualan Reseller',`
+    <div class="field"><label>Reseller</label><input value="${esc(r.name)}" disabled></div>
+    <div class="field"><label>Produk</label><select id="rsProduct" onchange="updateSalePrice()">${products}</select></div>
+    <div class="field"><label>Harga satuan</label><input type="number" id="rsPrice" value="${Math.round(data.products[0].price*(1-r.discount_pct/100))}"></div>
+    <div class="field"><label>Jumlah</label><input type="number" id="rsQty" min="1" value="1" oninput="updateSalePrice()"></div>
+    <div class="field"><label>Total</label><input id="rsTotal" disabled></div>
+    <button class="btn accent block" onclick="submitResellerSale('${rid}')">Simpan</button>
+  `);
+  updateSalePrice();
+}
+
+function updateSalePrice(){
+  const sel=$('#rsProduct'); if(!sel) return;
+  const opt=sel.options[sel.selectedIndex];
+  const price=parseFloat(opt.dataset.price)||0;
+  $('#rsPrice').value=Math.round(price);
+  const qty=parseInt($('#rsQty').value)||1;
+  $('#rsTotal').value=fmtRp(price*qty);
+}
+
+async function submitResellerSale(rid){
+  const product_id=$('#rsProduct').value;
+  const quantity=parseInt($('#rsQty').value)||0;
+  const unit_price=parseFloat($('#rsPrice').value)||0;
+  if(!product_id||quantity<=0) return toast('Isi jumlah','error');
+  try{
+    const {error}=await sb.from('reseller_sales').insert({reseller_id:rid,product_id,quantity,unit_price});
+    if(error)throw error;
+    // Kurangi stok
+    await sb.from('stock_movements').insert({product_id,movement_type:'out',quantity:-quantity,reference_type:'reseller_sale',note:'Reseller'});
+    closeModal();toast('Penjualan dicatat','success');
+    await loadAll();render();
+  }catch(err){toast('Gagal: '+err.message,'error');}
+}
+
+function renderTitip(){
+  const total=data.stores.length;
+  const activeCons=data.consignments.filter(c=>c.status==='active').length;
+  let html=`
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-num">${total}</div><div class="stat-label">Toko partner</div></div>
+      <div class="stat-card"><div class="stat-num green">${activeCons}</div><div class="stat-label">Titipan aktif</div></div>
+    </div>
+    <div class="pad" style="padding-top:8px;display:flex;gap:8px">
+      <button class="btn accent sm" onclick="modalAddStore()">+ Toko</button>
+      <button class="btn secondary sm" onclick="modalAddConsignment()">+ Titipan</button>
+    </div>
+    <div class="sec">Daftar Toko</div>
+  `;
+  if(data.stores.length===0){
+    html+='<div class="empty">Belum ada toko partner.</div>';
+  } else {
+    data.stores.forEach(s=>{
+      const cons=data.consignments.filter(c=>c.store_id===s.id&&c.status==='active');
+      const pending = cons.reduce((sum,c)=>{
+        const p=data.products.find(x=>x.id===c.product_id);
+        const sisa=c.quantity_sent-c.quantity_sold;
+        return sum + sisa*(p?.price||0)*s.revenue_share_pct/100;
+      },0);
+      html+=`
+        <div class="list-item">
+          <div class="list-item-main">
+            <div class="list-item-title">${esc(s.name)}</div>
+            <div class="list-item-sub">${esc(s.address||'-')} · Bagi hasil ${s.revenue_share_pct}%</div>
+            <div class="list-item-sub" style="margin-top:4px">${cons.length} titipan aktif · Estimasi bagi hasil ${fmtRp(pending)}</div>
+          </div>
+        </div>
+      `;
+    });
+  }
+  $('#main')?.scrollTo?.(0,0);
+  return html;
+}
+
+function modalAddStore(){
+  openModal('Tambah Toko Partner',`
+    <div class="field"><label>Nama toko</label><input id="stName"></div>
+    <div class="field"><label>Alamat</label><input id="stAddr"></div>
+    <div class="field"><label>Nama PIC</label><input id="stPic"></div>
+    <div class="field"><label>No. HP PIC</label><input id="stPhone"></div>
+    <div class="field"><label>Bagi hasil (%)</label><input type="number" id="stShare" value="20"></div>
+    <button class="btn accent block" onclick="submitStore()">Simpan</button>
+  `);
+}
+
+async function submitStore(){
+  const name=$('#stName').value.trim();
+  if(!name) return toast('Nama wajib','error');
+  try{
+    const {error}=await sb.from('partner_stores').insert({
+      name,address:$('#stAddr').value,pic_name:$('#stPic').value,
+      pic_phone:$('#stPhone').value,revenue_share_pct:parseFloat($('#stShare').value)||20
+    });
+    if(error)throw error;
+    closeModal();toast('Toko ditambah','success');
+    await loadAll();render();
+  }catch(err){toast('Gagal','error');}
+}
+
+function modalAddConsignment(){
+  if(data.stores.length===0) return toast('Tambah toko dulu','error');
+  openModal('Kirim Titipan',`
+    <div class="field"><label>Toko</label>
+      <select id="cStore">${data.stores.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select>
+    </div>
+    <div class="field"><label>Produk</label>
+      <select id="cProduct">${data.products.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select>
+    </div>
+    <div class="field"><label>Jumlah kirim</label><input type="number" id="cQty" min="1" value="5"></div>
+    <button class="btn accent block" onclick="submitConsignment()">Kirim</button>
+  `);
+}
+
+async function submitConsignment(){
+  const store_id=$('#cStore').value;
+  const product_id=$('#cProduct').value;
+  const quantity_sent=parseInt($('#cQty').value)||0;
+  if(!store_id||!product_id||quantity_sent<=0) return toast('Lengkapi data','error');
+  try{
+    const {error}=await sb.from('consignment_stocks').insert({store_id,product_id,quantity_sent});
+    if(error)throw error;
+    await sb.from('stock_movements').insert({product_id,movement_type:'out',quantity:-quantity_sent,reference_type:'consignment',note:'Titip toko'});
+    closeModal();toast('Titipan dikirim','success');
+    await loadAll();render();
+  }catch(err){toast('Gagal: '+err.message,'error');}
+}
+
+// ==========================================
+// CUSTOMER
+// ==========================================
+function renderCust(){
+  $('#pageTitle').textContent='Customer';
+  $('#pageSub').textContent=`${data.customers.length} terdaftar`;
+  let html=`
+    <div class="pad" style="padding-top:12px"><button class="btn accent sm" onclick="modalAddCustomer()">+ Tambah Customer</button></div>
+    <div class="sec">Daftar Customer</div>
+  `;
+  if(data.customers.length===0){
+    html+='<div class="empty"><div class="empty-icon">👥</div>Belum ada customer</div>';
+  } else {
+    data.customers.forEach(c=>{
+      const badgeColor=c.consent_given?'green':'amber';
+      html+=`
+        <div class="list-item">
+          <div class="list-item-main">
+            <div class="list-item-title">${esc(c.name)}</div>
+            <div class="list-item-sub">${esc(c.phone||'-')} · ${esc(c.source||'-')}</div>
+            <div class="list-item-sub" style="margin-top:4px">
+              <span class="badge ${badgeColor}">${c.consent_given?'consent':'no consent'}</span>
+              ${c.total_orders>0?` · ${c.total_orders} order · ${fmtRp(c.total_spent)}`:''}
+            </div>
+          </div>
+        </div>
+      `;
+    });
+  }
+  $('#main').innerHTML=html;
+}
+
+function modalAddCustomer(){
+  openModal('Tambah Customer',`
+    <div class="field"><label>Nama</label><input id="cuName"></div>
+    <div class="field"><label>No. HP</label><input id="cuPhone" placeholder="08xxx"></div>
+    <div class="field"><label>Email</label><input id="cuEmail"></div>
+    <div class="field"><label>Alamat</label><textarea id="cuAddr"></textarea></div>
+    <div class="field"><label>Sumber</label>
+      <select id="cuSource">
+        <option>wa</option><option>bazar</option><option>marketplace</option>
+        <option>lead_magnet</option><option>ctwa</option><option>instagram</option>
+      </select>
+    </div>
+    <div class="field" style="display:flex;align-items:center;gap:8px">
+      <input type="checkbox" id="cuConsent" style="width:auto">
+      <label for="cuConsent" style="margin:0;font-size:13px">Customer setuju dihubungi via WA</label>
+    </div>
+    <button class="btn accent block" onclick="submitCustomer()">Simpan</button>
+  `);
+}
+
+async function submitCustomer(){
+  const name=$('#cuName').value.trim();
+  if(!name) return toast('Nama wajib','error');
+  const consent=$('#cuConsent').checked;
+  try{
+    const {error}=await sb.from('customers').insert({
+      name,phone:$('#cuPhone').value,email:$('#cuEmail').value,
+      address:$('#cuAddr').value,source:$('#cuSource').value,
+      consent_given:consent,consent_date:consent?new Date().toISOString():null
+    });
+    if(error)throw error;
+    closeModal();toast('Customer ditambah','success');
+    await loadAll();render();
+  }catch(err){toast('Gagal: '+(err.message||''),'error');}
+}
+
+// ==========================================
+// TOOLS (Kalkulator + Ads)
+// ==========================================
+function renderTools(){
+  const sub=activeSub.tools||'calc';
+  $('#pageTitle').textContent=sub==='calc'?'Kalkulator Harga':'Ads Task';
+  $('#pageSub').textContent=sub==='calc'?'Hitung harga jual':'Belajar iklan step-by-step';
+  let html=`
+    <div class="sub-tabs">
+      <button class="sub-tab ${sub==='calc'?'active':''}" onclick="setSub('tools','calc')">💰 Kalkulator</button>
+      <button class="sub-tab ${sub==='ads'?'active':''}" onclick="setSub('tools','ads')">📣 Ads</button>
+    </div>
+  `;
+  if(sub==='calc') html+=renderCalc();
+  else html+=renderAds();
+  $('#main').innerHTML=html;
+  if(sub==='ads') bindTaskEvents();
+}
+
+function renderCalc(){
+  return `
+    <div class="pad" style="padding-top:12px">
+      <div class="field"><label>HPP per botol</label><input type="number" id="cHpp" value="32000" oninput="calc()"></div>
+      <div class="field"><label>Laba yang diinginkan</label><input type="number" id="cProfit" value="25000" oninput="calc()"></div>
+      <div class="field"><label>Platform</label>
+        <select id="cPlatform" onchange="calc()">
+          <option value="shopee">Shopee (8,25% + XTRA 5,5% + 1.250)</option>
+          <option value="shopee_reg">Shopee Reguler (8,25% + 1.250)</option>
+          <option value="tiktok">TikTok Shop (7%)</option>
+          <option value="tokopedia">Tokopedia (7% + 1.250)</option>
+        </select>
+      </div>
+      <div id="calcOut"></div>
+    </div>
+  `;
+}
+
+function calc(){
+  const hpp=parseFloat($('#cHpp')?.value)||0;
+  const profit=parseFloat($('#cProfit')?.value)||0;
+  const platform=$('#cPlatform')?.value;
+  const rates={shopee:0.1375,shopee_reg:0.0825,tiktok:0.07,tokopedia:0.07};
+  const fixed={shopee:1250,shopee_reg:1250,tiktok:0,tokopedia:1250};
+  const rate=rates[platform]||0;
+  const fixedCost=fixed[platform]||0;
+  const price=(hpp+fixedCost+profit)/(1-rate);
+  const rounded=Math.ceil(price/1000)*1000;
+  const platformFee=rounded*rate;
+  const netProfit=rounded-platformFee-fixedCost-hpp;
+
+  $('#calcOut').innerHTML=`
+    <div class="calc-result">
+      <div class="row"><span>HPP</span><span class="v">${fmtRp(hpp)}</span></div>
+      <div class="row"><span>Biaya proses platform</span><span class="v">${fmtRp(fixedCost)}</span></div>
+      <div class="row"><span>Potongan platform (${(rate*100).toFixed(2)}%)</span><span class="v">${fmtRp(platformFee)}</span></div>
+      <div class="row"><span>Laba bersih</span><span class="v">${fmtRp(netProfit)}</span></div>
+      <div class="row total"><span>Harga jual minimum</span><span class="v">${fmtRp(rounded)}</span></div>
+      <div style="font-size:11.5px;color:#065f46;margin-top:8px">Saran: jual di ${fmtRp(Math.ceil(rounded/1000)*1000)} – ${fmtRp(Math.ceil(rounded/1000)*1000+20000)} untuk margin aman.</div>
+    </div>
+  `;
+}
+
+function renderAds(){
+  let html=`<div class="sec">Ads untuk Pemula · ${data.ads.filter(t=>t.done).length}/${data.ads.length} selesai</div>`;
+  data.ads.forEach(t=>{
+    html+=renderTaskCard({...t, meta:'Ads', area:'marketing', category:'m1'});
+  });
+  return html;
+}
+
+// ==========================================
+// EXPORT & RESET
+// ==========================================
+function exportAll(){
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`parfumbiz-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();URL.revokeObjectURL(url);
+  toast('Data diexport','success');
+  closeModal();
+}
+
+async function confirmReset(){
+  openModal('Reset Semua?',`
+    <p style="font-size:13px;color:var(--tx-mut);margin-bottom:16px">Semua centang & catatan akan dihapus. Data lain (produk, stok, customer) tidak terhapus.</p>
+    <button class="btn danger block" onclick="doReset()">Ya, reset semua</button>
+  `);
+}
+
+async function doReset(){
+  try{
+    await sb.from('tasks').update({done:false,notes:''}).neq('id','');
+    await sb.from('ads_tasks').update({done:false,notes:''}).neq('id','');
+    closeModal();toast('Semua direset','success');
+    await loadAll();render();
+  }catch(err){toast('Gagal','error');}
+}
+
+// INIT
+loadAll();
+</script>
+</body>
+</html>
