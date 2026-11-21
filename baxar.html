@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pesan Parfum</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,system-ui,sans-serif;background:#f8fafc;color:#0a0a0a;padding:20px;line-height:1.5;}
+  .wrap{max-width:480px;margin:0 auto;background:#fff;border-radius:16px;padding:24px;box-shadow:0 4px 24px rgba(0,0,0,0.06);}
+  h1{font-size:22px;margin-bottom:4px;letter-spacing:-0.4px;}
+  .sub{color:#6b7280;font-size:13px;margin-bottom:20px;}
+  .field{margin-bottom:14px;}
+  label{display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.3px;}
+  input,select,textarea{width:100%;padding:11px 12px;font-size:16px;border:1px solid #e5e7eb;border-radius:10px;font-family:inherit;}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:#10b981;}
+  .item{display:flex;gap:8px;margin-bottom:8px;}
+  .item select{flex:2;}
+  .item input{flex:1;}
+  .price-line{background:#f8fafc;border-radius:10px;padding:12px;margin:16px 0;display:flex;justify-content:space-between;font-weight:700;font-size:16px;}
+  button{width:100%;padding:14px;background:#10b981;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;}
+  button:active{transform:scale(0.98);}
+  button:disabled{opacity:0.6;cursor:not-allowed;}
+  .consent{display:flex;align-items:flex-start;gap:8px;margin:14px 0;font-size:12.5px;color:#6b7280;}
+  .consent input{width:auto;margin-top:2px;}
+  .success{text-align:center;padding:40px 20px;}
+  .success-icon{font-size:48px;margin-bottom:12px;}
+  .error{background:#fef2f2;color:#991b1b;padding:12px;border-radius:8px;font-size:13px;margin-top:12px;}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <h1>Pesan Parfum</h1>
+  <div class="sub">Isi form di bawah, kami akan hubungi via WhatsApp</div>
+
+  <div class="field">
+    <label>Nama kamu *</label>
+    <input id="name" placeholder="Nama lengkap" required>
+  </div>
+  <div class="field">
+    <label>No. WhatsApp *</label>
+    <input id="phone" type="tel" placeholder="08xxxxxxxxxx" required>
+  </div>
+  <div class="field">
+    <label>Alamat (kalau mau dikirim)</label>
+    <textarea id="address" placeholder="Alamat lengkap atau kosongkan kalau ambil di bazar"></textarea>
+  </div>
+
+  <div style="margin:16px 0 6px;font-size:13px;font-weight:700;color:#374151">Pilih produk</div>
+  <div id="items"></div>
+  <button style="background:#f1f5f9;color:#0a0a0a;margin-bottom:16px;font-size:13px;padding:10px" onclick="addItem()">+ Tambah produk lain</button>
+
+  <div class="price-line"><span>Total</span><span id="total">Rp0</span></div>
+
+  <div class="consent">
+    <input type="checkbox" id="consent">
+    <label for="consent" style="text-transform:none;letter-spacing:0;font-weight:400;font-size:12.5px;margin:0">
+      Saya setuju dihubungi via WhatsApp untuk konfirmasi pesanan
+    </label>
+  </div>
+
+  <button id="submit" onclick="submitOrder()">Pesan Sekarang</button>
+  <div id="error" class="error" style="display:none"></div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://jpinyoramequkxiqrtit.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwaW55b3JhbWVxdWt4aXFydGl0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUyMzUwNTksImV4cCI6MjExMDgxMTA1OX0.46i7ijuXHu1cVguuPwC3grZ8cJuul6do2OSHZUhxHtk';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let products = [];
+const $ = id => document.getElementById(id);
+
+async function init(){
+  const { data, error } = await sb.from('products').select('id,name,size_ml,price').eq('is_active',true).order('size_ml');
+  if (error){ $('error').textContent = 'Gagal memuat produk: ' + error.message; $('error').style.display='block'; return; }
+  products = data || [];
+  addItem();
+}
+
+function addItem(){
+  const idx = document.querySelectorAll('.item').length;
+  const div = document.createElement('div');
+  div.className = 'item';
+  div.innerHTML = `
+    <select class="prod" onchange="calcTotal()">
+      <option value="">-- Pilih produk --</option>
+      ${products.map(p=>`<option value="${p.id}" data-price="${p.price}">${p.name}</option>`).join('')}
+    </select>
+    <input type="number" class="qty" min="1" value="1" onchange="calcTotal()">
+    <button style="width:auto;padding:8px 12px;background:#fef2f2;color:#ef4444;font-size:13px;margin-left:4px" onclick="this.parentElement.remove();calcTotal()">✕</button>
+  `;
+  $('items').appendChild(div);
+}
+
+function calcTotal(){
+  let total = 0;
+  document.querySelectorAll('.item').forEach(item=>{
+    const sel = item.querySelector('.prod');
+    const qty = parseInt(item.querySelector('.qty').value) || 0;
+    const opt = sel.options[sel.selectedIndex];
+    const price = opt ? parseFloat(opt.dataset.price) || 0 : 0;
+    total += price * qty;
+  });
+  $('total').textContent = 'Rp' + total.toLocaleString('id-ID');
+}
+
+async function submitOrder(){
+  const name = $('name').value.trim();
+  const phone = $('phone').value.trim();
+  const address = $('address').value.trim();
+  const consent = $('consent').checked;
+
+  $('error').style.display = 'none';
+
+  if (!name || !phone) return showErr('Nama dan No. WhatsApp wajib diisi');
+  if (!consent) return showErr('Mohon centang persetujuan dihubungi');
+  if (!/^[0-9+\s-]{8,}$/.test(phone)) return showErr('Format No. WhatsApp tidak valid');
+
+  const items = [];
+  let total = 0;
+  document.querySelectorAll('.item').forEach(item=>{
+    const sel = item.querySelector('.prod');
+    const qty = parseInt(item.querySelector('.qty').value) || 0;
+    if (!sel.value || qty <= 0) return;
+    const opt = sel.options[sel.selectedIndex];
+    const price = parseFloat(opt.dataset.price) || 0;
+    items.push({ product_id: sel.value, quantity: qty, unit_price: price });
+    total += price * qty;
+  });
+
+  if (items.length === 0) return showErr('Pilih minimal 1 produk');
+
+  $('submit').disabled = true;
+  $('submit').textContent = 'Memproses...';
+
+  try {
+    const orderNumber = 'BAZAR-' + Date.now().toString().slice(-8);
+
+    const { data: order, error: orderErr } = await sb.from('orders').insert({
+      order_number: orderNumber,
+      customer_name: name,
+      customer_phone: phone,
+      customer_address: address,
+      source: 'bazar',
+      status: 'pending',
+      total_amount: total
+    }).select().single();
+
+    if (orderErr) throw orderErr;
+
+    const orderItems = items.map(i => ({ order_id: order.id, ...i }));
+    const { error: itemsErr } = await sb.from('order_items').insert(orderItems);
+    if (itemsErr) throw itemsErr;
+
+    // Simpan customer (upsert berdasarkan phone)
+    await sb.from('customers').upsert({
+      name, phone, address, source: 'bazar',
+      consent_given: true, consent_date: new Date().toISOString(),
+      last_order_date: new Date().toISOString().slice(0,10)
+    }, { onConflict: 'phone' });
+
+    // Success
+    const itemsText = items.map(i => {
+      const p = products.find(x=>x.id===i.product_id);
+      return `• ${p.name} × ${i.quantity}`;
+    }).join('%0A');
+    const waText = `Halo, saya sudah pesan via bazar:%0A%0ANama: ${encodeURIComponent(name)}%0ANo. Pesanan: ${orderNumber}%0A${itemsText}%0A%0ATotal: Rp${total.toLocaleString('id-ID')}`;
+
+    $('app').innerHTML = `
+      <div class="success">
+        <div class="success-icon">✅</div>
+        <h1>Pesanan diterima!</h1>
+        <p class="sub">No. Pesanan: <b>${orderNumber}</b></p>
+        <p style="font-size:14px;color:#374151;margin:16px 0">Klik tombol di bawah untuk konfirmasi via WhatsApp</p>
+        <a href="https://wa.me/6281234567890?text=${waText}" target="_blank" style="display:block;padding:14px;background:#10b981;color:#fff;border-radius:10px;text-decoration:none;font-weight:700;margin-bottom:8px">Buka WhatsApp</a>
+        <a href="${location.href}" style="display:block;padding:12px;background:#f1f5f9;color:#0a0a0a;border-radius:10px;text-decoration:none;font-size:14px">Pesan lagi</a>
+      </div>
+    `;
+  } catch(err){
+    showErr(err.message || 'Gagal mengirim pesanan');
+    $('submit').disabled = false;
+    $('submit').textContent = 'Pesan Sekarang';
+  }
+}
+
+function showErr(msg){
+  $('error').textContent = msg;
+  $('error').style.display = 'block';
+}
+
+init();
+</script>
+</body>
+</html>
